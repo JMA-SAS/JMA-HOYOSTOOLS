@@ -157,9 +157,10 @@ class AccountMove(models.Model):
                     'order_line': order_lines,
                 }
 
-                if remote_campaign_id:
-                    po_vals['campaign_id'] = remote_campaign_id
-
+                #if remote_campaign_id:
+                #    po_vals['campaign_id'] = remote_campaign_id
+                remote_campaign_id = False
+                
                 purchase_id = models_proxy.execute_kw(
                     db, uid, password,
                     'purchase.order', 'create',
