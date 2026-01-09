@@ -348,11 +348,24 @@ class SyncConfig(models.Model):
                 {'limit': 1}
             )
 
+            # Buscar moneda remota por código (USD, COP, etc)
+            remote_currency_ids = models_proxy.execute_kw(
+                self.remote_database,
+                uid,
+                self.remote_password,
+                'res.currency',
+                'search',
+                [[('name', '=', pricelist.currency_id.name)]],
+                {'limit': 1}
+            )
+            remote_currency_id = remote_currency_ids[0] if remote_currency_ids else False
+
             pricelist_vals = {
                 'name': pricelist.name,
-                'currency_id': pricelist.currency_id.id,
                 'active': pricelist.active,
             }
+            if remote_currency_id:
+                pricelist_vals['currency_id'] = remote_currency_id
 
             # Crear o actualizar lista de precios
             if remote_ids:
@@ -412,6 +425,7 @@ class SyncConfig(models.Model):
                     'price_round': item.price_round,
                     'price_min_margin': item.price_min_margin,
                     'price_max_margin': item.price_max_margin,
+                    'base': item.base,
                 }
 
                 # Resolver dependencias (producto / plantilla / categoría)
@@ -431,13 +445,18 @@ class SyncConfig(models.Model):
                         continue
 
                 if item.product_tmpl_id:
+                    # Buscar por default_code si tiene, si no por nombre
+                    tmpl_domain = [('name', '=', item.product_tmpl_id.name)]
+                    if item.product_tmpl_id.default_code:
+                        tmpl_domain = [('default_code', '=', item.product_tmpl_id.default_code)]
+                    
                     remote_template = models_proxy.execute_kw(
                         self.remote_database,
                         uid,
                         self.remote_password,
                         'product.template',
                         'search',
-                        [[('name', '=', item.product_tmpl_id.name)]],
+                        [tmpl_domain],
                         {'limit': 1}
                     )
                     if remote_template:
