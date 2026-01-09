@@ -157,6 +157,9 @@ class AccountMove(models.Model):
                 # ------------------------------
                 # Crear Orden de Compra
                 # ------------------------------
+                # Validar campos existentes en el remoto antes de enviarlos
+                remote_fields = models_proxy.execute_kw(db, uid, password, 'purchase.order', 'fields_get', [[]], {'attributes': ['string']})
+                
                 # Obtener la URL base de esta instancia para enviarla como origen
                 base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
                 origin_info = f"{base_url} ({self.env.cr.dbname})"
@@ -165,9 +168,12 @@ class AccountMove(models.Model):
                     'partner_id': remote_partner_id,
                     'partner_ref': move.name,
                     'order_line': order_lines,
-                    'is_synced': True,
-                    'sync_connection_name': origin_info,
                 }
+
+                if 'is_synced' in remote_fields:
+                    po_vals['is_synced'] = True
+                if 'sync_connection_name' in remote_fields:
+                    po_vals['sync_connection_name'] = origin_info
 
                 purchase_id = models_proxy.execute_kw(
                     db, uid, password,

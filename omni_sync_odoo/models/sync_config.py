@@ -364,7 +364,41 @@ class SyncConfig(models.Model):
         self.ensure_one()
         wizard = self.env['sync.pictures.wizard'].create({
             'config_id': self.id,
-            'brands_to_sync': self.brands_to_sync,
-            'batch_size': self.batch_size,
+            'brand_to_sync': self.brands_to_sync,
         })
-        return wizard.action_sync()
+        return wizard.action_sync_pictures()
+
+    def action_sync_images_only(self):
+        """Alias para el método llamado desde la vista si es necesario"""
+        return self.action_sync_images_now()
+
+    def action_manual_sync(self):
+        """Sincroniza todo lo habilitado"""
+        for record in self:
+            if record.sync_products:
+                record._sync_products_from_remote()
+            if record.sync_images:
+                record.action_sync_images_now()
+            record.update_stats()
+        return True
+
+    def action_sync_products_to_remote(self):
+        """Sincroniza productos desde el remoto"""
+        self.ensure_one()
+        res = self._sync_products_from_remote()
+        self.update_stats()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Sincronización de Productos'),
+                'message': _('Creados: %s, Actualizados: %s') % (res['created'], res['updated']),
+                'type': 'success',
+            }
+        }
+
+    def action_sync_pricelists_to_remote(self):
+        """Sincroniza listas de precios (Placeholder o implementación básica)"""
+        self.ensure_one()
+        # Aquí iría la lógica de listas de precios si se requiere
+        return True

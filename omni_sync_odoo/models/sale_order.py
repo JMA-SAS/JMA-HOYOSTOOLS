@@ -192,7 +192,7 @@ class SaleOrder(models.Model):
                             db, uid, password, 'utm.campaign', 'create', [{'name': order.campaign_id.name}]
                         )
 
-                # Validar si el campo is_remote_order existe en el remoto antes de enviarlo
+                # Validar campos existentes en el remoto antes de enviarlos
                 remote_fields = models_rpc.execute_kw(db, uid, password, 'sale.order', 'fields_get', [[]], {'attributes': ['string']})
                 
                 # Crear pedido remoto
@@ -205,10 +205,13 @@ class SaleOrder(models.Model):
                 
                 if 'is_remote_order' in remote_fields:
                     order_data['is_remote_order'] = True  # Marcamos en el destino que es un pedido remoto
-                if order.meli_tracking_pdf and order.meli_tracking_filename:
+                
+                if 'meli_tracking_pdf' in remote_fields and order.meli_tracking_pdf:
                     order_data['meli_tracking_pdf'] = order.meli_tracking_pdf
-                    order_data['meli_tracking_filename'] = order.meli_tracking_filename
-                if remote_campaign_id:
+                    if 'meli_tracking_filename' in remote_fields:
+                        order_data['meli_tracking_filename'] = order.meli_tracking_filename
+                
+                if remote_campaign_id and 'campaign_id' in remote_fields:
                     order_data['campaign_id'] = remote_campaign_id
 
                 remote_order_id = models_rpc.execute_kw(db, uid, password, 'sale.order', 'create', [order_data])

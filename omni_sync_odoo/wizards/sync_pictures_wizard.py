@@ -35,8 +35,14 @@ class SyncPicturesWizard(models.TransientModel):
         
         start_time = time.time()
         try:
-            marcas = [m.strip() for m in self.config_id.brands_to_sync.split(',') if m.strip()] if self.sync_all_brands else [self.brand_to_sync.strip()]
+            if self.sync_all_brands:
+                marcas = [m.strip() for m in (self.config_id.brands_to_sync or '').split(',') if m.strip()]
+            else:
+                marcas = [self.brand_to_sync.strip()] if self.brand_to_sync else []
             
+            if not marcas:
+                marcas = ['TOTAL']
+
             timeout_transport = TimeoutTransport(timeout=self.config_id.timeout)
             
             # Conexión Remota (Origen de las imágenes)
@@ -72,7 +78,6 @@ class SyncPicturesWizard(models.TransientModel):
             'execution_type': self.execution_type,
         })
         
-        details = []
         line_vals = []
         try:
             # Buscar productos en remoto
