@@ -36,4 +36,34 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Vista de Búsqueda Heredada de Ventas -->
+    <record id="view_sales_order_filter_inherit_sync" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.sync</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter string="Sincronizados" name="synced" domain="[('is_synced', '=', True)]"/>
+                <filter string="No Sincronizados" name="not_synced" domain="[('is_synced', '=', False)]"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Estado de Sincronización" name="group_by_sync" context="{'group_by': 'is_synced'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista Tree Heredada de Ventas -->
+    <record id="view_order_tree_inherit_sync" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.sync</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <field name="state" position="before">
+                <field name="is_synced" string="Sincronizado" widget="boolean_toggle" optional="show"/>
+                <field name="remote_order_ref" string="Ref. Remota" optional="show"/>
+            </field>
+        </field>
+    </record>
 </odoo>

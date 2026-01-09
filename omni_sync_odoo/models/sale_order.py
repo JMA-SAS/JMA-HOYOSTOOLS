@@ -1,27 +1,71 @@
-from odoo import models, fields, _
+from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import xmlrpc.client
 
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
+    is_synced = fields.Boolean(
+        string="Sincronizado", 
+        readonly=True, 
+        copy=False,
+        help="Indica si esta línea de pedido ha sido procesada y enviada exitosamente a la instancia remota."
+    )
     sync_status = fields.Selection([
         ('synced', 'Sincronizado'),
         ('failed', 'No Sincronizado')
-    ], string="Estado Sinc.", readonly=True, copy=False)
+    ], string="Estado Sinc.", readonly=True, copy=False, help="Estado detallado de la sincronización para esta línea específica.")
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
-    meli_tracking_pdf = fields.Binary(string="Guía Meli (PDF)", attachment=True)
-    meli_tracking_filename = fields.Char(string="Nombre del archivo")
-    sync_log = fields.Html(string="Resumen de Sincronización", readonly=True, copy=False)
-    remote_order_ref = fields.Char(string="Referencia Remota", readonly=True, copy=False)
-    is_remote_order = fields.Boolean(string="Es Pedido Remoto", default=False, help="Indica si este pedido fue creado desde una instancia remota para evitar re-sincronización.")
+    is_synced = fields.Boolean(
+        string="Sincronizado", 
+        readonly=True, 
+        copy=False,
+        help="Indica si el pedido completo ha sido sincronizado con el servidor remoto."
+    )
+    meli_tracking_pdf = fields.Binary(
+        string="Guía Meli (PDF)", 
+        attachment=True,
+        help="Archivo PDF de la guía de despacho de Mercado Libre para ser enviado al remoto."
+    )
+    meli_tracking_filename = fields.Char(
+        string="Nombre del archivo",
+        help="Nombre técnico del archivo PDF de la guía."
+    )
+    sync_log = fields.Html(
+        string="Resumen de Sincronización", 
+        readonly=True, 
+        copy=False,
+        help="Registro visual detallado del resultado de la sincronización, incluyendo IDs remotos y marcas de tiempo."
+    )
+    remote_order_ref = fields.Char(
+        string="Referencia Remota", 
+        readonly=True, 
+        copy=False,
+        help="Nombre o número de referencia asignado al pedido en la instancia de Odoo remota."
+    )
+    is_remote_order = fields.Boolean(
+        string="Es Pedido Remoto", 
+        default=False, 
+        help="Marca técnica para identificar pedidos que vienen desde otra instancia y evitar bucles de re-sincronización infinita."
+    )
+
+    # Campos para el dashboard
+    @api.model
+    def get_sync_stats(self):
+        """Devuelve estadísticas de sincronización para el dashboard de ventas"""
+        synced_orders = self.search([('is_synced', '=', True)])
+        total_count = len(synced_orders)
+        avg_value = sum(synced_orders.mapped('amount_total')) / total_count if total_count > 0 else 0.0
+        return {
+            'total_count': total_count,
+            'avg_value': avg_value,
+        }
 
     def action_confirm(self):
+        """Extensión de la confirmación para disparar la sincronización automática."""
         res = super(SaleOrder, self).action_confirm()
         for order in self:
             # Sincronizar automáticamente al confirmar si no está sincronizado y NO es un pedido remoto
@@ -34,6 +78,7 @@ class SaleOrder(models.Model):
         return res
 
     def action_sync_order(self):
+        """Proceso principal de envío de pedido a instancia remota."""
         for order in self:
             if order.is_synced:
                 raise UserError(_('Este pedido ya fue sincronizado.'))
@@ -172,7 +217,7 @@ class SaleOrder(models.Model):
                 remote_order_name = models_rpc.execute_kw(db, uid, password, 'sale.order', 'read', [[remote_order_id]], {'fields': ['name']})
                 remote_ref = remote_order_name[0].get('name') if remote_order_name else str(remote_order_id)
 
-                # Generar Log de Resumen (Diseño de Tabla Limpia para evitar recortes de Odoo)
+                # Generar Log de Resumen
                 log_html = f"""
                     <div style="width: 100%; margin-top: 10px; font-family: sans-serif;">
                         <table style="width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed;">

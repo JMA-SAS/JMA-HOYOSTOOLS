@@ -1,13 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_omni_sync_root" name="B4B SYNC" sequence="100" web_icon="omni_sync_odoo,static/description/icon.png"/>
+    <!-- Menú Raíz -->
+    <menuitem id="menu_omni_sync_root" 
+              name="B4B SYNC" 
+              sequence="10" 
+              web_icon="omni_sync_odoo,static/description/icon.png"/>
     
-    <menuitem id="menu_omni_sync_dashboard" name="Tablero" parent="menu_omni_sync_root" sequence="5" action="action_omni_sync_dashboard"/>
-    <menuitem id="menu_omni_sync_config" name="Parametrización" parent="menu_omni_sync_root" sequence="10" action="action_omni_sync_config"/>
+    <!-- 1. Tablero Principal -->
+    <menuitem id="menu_omni_sync_dashboard" 
+              name="Tablero" 
+              parent="menu_omni_sync_root" 
+              sequence="5" 
+              action="action_omni_sync_dashboard"/>
+
+    <!-- 2. Parametrización (Configuración de Conexiones) -->
+    <menuitem id="menu_omni_sync_parametrization" 
+              name="Parametrización" 
+              parent="menu_omni_sync_root" 
+              sequence="10" 
+              action="action_omni_sync_config"/>
+
+    <!-- 3. Logs de Sincronización -->
+    <menuitem id="menu_sync_pictures_log" 
+              name="Logs de Sincronización" 
+              parent="menu_omni_sync_root" 
+              sequence="20" 
+              action="action_sync_pictures_log"/>
     
-    <menuitem id="menu_omni_sync_operations" name="Operaciones" parent="menu_omni_sync_root" sequence="20"/>
-    <menuitem id="menu_sync_pictures_wizard" name="Sincronizar Imágenes" parent="menu_omni_sync_operations" sequence="10" action="action_sync_pictures_wizard"/>
+    <!-- 4. Operaciones -->
+    <menuitem id="menu_omni_sync_operations" 
+              name="Operaciones" 
+              parent="menu_omni_sync_root" 
+              sequence="30"/>
+              
+    <menuitem id="menu_sync_pictures_wizard" 
+              name="Sincronizar Imágenes" 
+              parent="menu_omni_sync_operations" 
+              sequence="10" 
+              action="action_sync_pictures_wizard"/>
     
-    <menuitem id="menu_omni_sync_logs" name="Logs" parent="menu_omni_sync_root" sequence="30"/>
-    <menuitem id="menu_sync_pictures_log" name="Logs de Imágenes" parent="menu_omni_sync_logs" sequence="10" action="action_sync_pictures_log"/>
+    <!-- 5. Configuración (Central de Modelos Relacionados) -->
+    <menuitem id="menu_omni_sync_config_root" 
+              name="Configuración" 
+              parent="menu_omni_sync_root" 
+              sequence="100"/>
+
+    <!-- Área: Ventas -->
+    <menuitem id="menu_sync_config_sales" 
+              name="Ventas (Módulo Ventas)" 
+              parent="menu_omni_sync_config_root" 
+              sequence="10"/>
+    <menuitem id="menu_sync_config_sales_orders" 
+              name="Pedidos de Venta" 
+              parent="menu_sync_config_sales" 
+              sequence="10" 
+              action="sale.action_orders"/>
+    <menuitem id="menu_sync_config_sales_quotations" 
+              name="Presupuestos" 
+              parent="menu_sync_config_sales" 
+              sequence="20" 
+              action="sale.action_quotations"/>
+
+    <!-- Área: Compras -->
+    <menuitem id="menu_sync_config_purchase" 
+              name="Compras (Módulo Compras)" 
+              parent="menu_omni_sync_config_root" 
+              sequence="20"/>
+    <menuitem id="menu_sync_config_purchase_orders" 
+              name="Órdenes de Compra" 
+              parent="menu_sync_config_purchase" 
+              sequence="10" 
+              action="purchase.purchase_form_action"/>
+    <menuitem id="menu_sync_config_purchase_rfq" 
+              name="Solicitudes de Presupuesto" 
+              parent="menu_sync_config_purchase" 
+              sequence="20" 
+              action="purchase.purchase_rfq"/>
+
+    <!-- Área: Facturación y Contabilidad -->
+    <menuitem id="menu_sync_config_accounting" 
+              name="Contabilidad (Módulo Facturación)" 
+              parent="menu_omni_sync_config_root" 
+              sequence="30"/>
+    <menuitem id="menu_sync_config_account_invoices" 
+              name="Facturas de Cliente" 
+              parent="menu_sync_config_accounting" 
+              sequence="10" 
+              action="account.action_move_out_invoice_type"/>
+    <menuitem id="menu_sync_config_account_bills" 
+              name="Facturas de Proveedor" 
+              parent="menu_sync_config_accounting" 
+              sequence="20" 
+              action="account.action_move_in_invoice_type"/>
+    <menuitem id="menu_sync_config_account_payments" 
+              name="Pagos" 
+              parent="menu_sync_config_accounting" 
+              sequence="30" 
+              action="account.action_account_payments"/>
+
+    <!-- Área: Inventarios y Productos -->
+    <menuitem id="menu_sync_config_inventory" 
+              name="Inventarios (Módulo Inventario)" 
+              parent="menu_omni_sync_config_root" 
+              sequence="40"/>
+    <menuitem id="menu_sync_config_inventory_products" 
+              name="Productos" 
+              parent="menu_sync_config_inventory" 
+              sequence="10" 
+              action="product.product_template_action"/>
+    <menuitem id="menu_sync_config_inventory_pricelists" 
+              name="Listas de Precios" 
+              parent="menu_sync_config_inventory" 
+              sequence="30" 
+              action="product.product_pricelist_action2"/>
+    <menuitem id="menu_sync_config_inventory_attributes" 
+              name="Atributos de Producto" 
+              parent="menu_sync_config_inventory" 
+              sequence="40" 
+              action="product.attribute_action"/>
 </odoo>

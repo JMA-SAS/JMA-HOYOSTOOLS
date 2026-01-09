@@ -1,48 +1,143 @@
-from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class ProductPricelist(models.Model):
     _inherit = 'product.pricelist'
 
-    sync_to_remote = fields.Boolean(string='Sincronizar a Remoto', default=False)
+    sync_to_remote = fields.Boolean(
+        string='Sincronizar a Remoto', 
+        default=False,
+        help="Si se marca, esta lista de precios será elegible para ser sincronizada con la instancia remota configurada."
+    )
 
 class SyncConfig(models.Model):
     _name = 'omni.sync.config'
     _description = 'Parametrización de Conexiones B4B SYNC'
     _rec_name = 'name'
 
-    name = fields.Char(string='Nombre', required=True)
+    name = fields.Char(
+        string='Nombre de la Conexión', 
+        required=True,
+        help="Nombre descriptivo para identificar esta configuración de sincronización (ej. Conexión Principal, Sucursal Norte)."
+    )
     
     # Configuración del servidor remoto (Origen de datos)
-    remote_url = fields.Char(string='URL Servidor Origen (Remoto)', required=True, help='URL de donde se traerán las imágenes o se enviarán datos')
-    remote_database = fields.Char(string='Base de Datos Origen', required=True)
-    remote_username = fields.Char(string='Usuario Origen', required=True)
-    remote_password = fields.Char(string='Contraseña Origen', required=True)
+    remote_url = fields.Char(
+        string='URL Servidor Origen (Remoto)', 
+        required=True, 
+        help="Dirección web completa de la instancia de Odoo remota. Debe incluir el protocolo (http:// o https://)."
+    )
+    remote_database = fields.Char(
+        string='Base de Datos Origen', 
+        required=True,
+        help="Nombre técnico de la base de datos en el servidor remoto con la que se desea conectar."
+    )
+    remote_username = fields.Char(
+        string='Usuario Origen', 
+        required=True,
+        help="Correo electrónico o nombre de usuario con permisos suficientes en la instancia remota."
+    )
+    remote_password = fields.Char(
+        string='Contraseña Origen', 
+        required=True,
+        help="Contraseña o API Key del usuario en la instancia remota. Se recomienda usar llaves de API para mayor seguridad."
+    )
     
     # Checkboxes de funcionalidad
-    sync_products = fields.Boolean(string='Sincronizar Productos', default=False)
-    sync_images = fields.Boolean(string='Sincronizar Imágenes', default=True)
-    sync_pricelists = fields.Boolean(string='Sincronizar Listas de Precios', default=False)
-    sync_sales = fields.Boolean(string='Sincronizar Ventas', default=False)
-    sync_purchases = fields.Boolean(string='Sincronizar Compras (desde Facturas)', default=False)
+    sync_products = fields.Boolean(
+        string='Sincronizar Productos', 
+        default=False,
+        help="Habilita la importación de productos desde la instancia remota hacia esta base de datos local."
+    )
+    sync_images = fields.Boolean(
+        string='Sincronizar Imágenes', 
+        default=True,
+        help="Habilita la descarga masiva de imágenes de productos desde el servidor remoto basándose en las marcas configuradas."
+    )
+    sync_pricelists = fields.Boolean(
+        string='Sincronizar Listas de Precios', 
+        default=False,
+        help="Habilita la sincronización de las reglas de precios y listas marcadas para exportación remota."
+    )
+    sync_sales = fields.Boolean(
+        string='Sincronizar Ventas', 
+        default=False,
+        help="Al confirmar un pedido de venta local, este se enviará automáticamente a la instancia remota."
+    )
+    sync_purchases = fields.Boolean(
+        string='Sincronizar Compras (desde Facturas)', 
+        default=False,
+        help="Al validar una factura de cliente local, se creará automáticamente una orden de compra en la instancia remota."
+    )
     
     # Configuración específica de imágenes
-    brands_to_sync = fields.Text(string='Marcas a Sincronizar', default='TOTAL', help='Separadas por comas')
-    batch_size = fields.Integer(string='Tamaño de Lote', default=50)
-    timeout = fields.Integer(string='Timeout (segundos)', default=120)
+    brands_to_sync = fields.Text(
+        string='Marcas a Sincronizar', 
+        default='TOTAL', 
+        help="Lista de marcas de productos a incluir en la sincronización de imágenes. Use 'TOTAL' para todas o separe nombres por comas."
+    )
+    batch_size = fields.Integer(
+        string='Tamaño de Lote', 
+        default=50,
+        help="Cantidad de registros a procesar en cada iteración para evitar sobrecargar la memoria del servidor."
+    )
+    timeout = fields.Integer(
+        string='Timeout (segundos)', 
+        default=120,
+        help="Tiempo máximo de espera para la respuesta del servidor remoto antes de cancelar la operación."
+    )
     
     # Configuración específica de compras
-    auto_confirm_po = fields.Boolean(string='Confirmar OC Automáticamente', default=False)
+    auto_confirm_po = fields.Boolean(
+        string='Confirmar OC Automáticamente', 
+        default=False,
+        help="Si se activa, las órdenes de compra creadas en el remoto se confirmarán automáticamente pasando a estado 'Orden de Compra'."
+    )
     
-    active = fields.Boolean(string='Activo', default=True)
+    active = fields.Boolean(
+        string='Activo', 
+        default=True,
+        help="Permite archivar la configuración sin eliminarla. Solo las configuraciones activas ejecutarán procesos automáticos."
+    )
     
     # Estadísticas para el tablero
-    last_sync_date = fields.Datetime(string='Última Sincronización')
-    total_synced_products = fields.Integer(string='Productos Sincronizados', default=0)
-    total_synced_images = fields.Integer(string='Imágenes Sincronizadas', default=0)
-    total_synced_pricelists = fields.Integer(string='Listas de Precios Sincronizadas', default=0)
-    total_synced_sales = fields.Integer(string='Ventas Sincronizadas', default=0)
-    total_synced_purchases = fields.Integer(string='Compras Sincronizadas', default=0)
+    last_sync_date = fields.Datetime(
+        string='Última Sincronización',
+        help="Fecha y hora en la que se completó con éxito el último proceso de sincronización."
+    )
+    total_synced_products = fields.Integer(
+        string='Productos Sincronizados', 
+        default=0,
+        readonly=True,
+        help="Contador acumulado de productos que han sido procesados desde el origen."
+    )
+    total_synced_images = fields.Integer(
+        string='Imágenes Sincronizadas', 
+        default=0,
+        readonly=True,
+        help="Cantidad total de imágenes descargadas y vinculadas a productos locales."
+    )
+    total_synced_pricelists = fields.Integer(
+        string='Listas de Precios Sincronizadas', 
+        default=0,
+        readonly=True,
+        help="Número de listas de precios que han sido actualizadas en el remoto."
+    )
+    total_synced_sales = fields.Integer(
+        string='Ventas Sincronizadas', 
+        default=0,
+        readonly=True,
+        help="Total de pedidos de venta enviados exitosamente a la instancia remota."
+    )
+    total_synced_purchases = fields.Integer(
+        string='Compras Sincronizadas', 
+        default=0,
+        readonly=True,
+        help="Total de órdenes de compra generadas en el remoto a partir de facturas locales."
+    )
 
     def _get_xmlrpc_proxies(self):
         self.ensure_one()
@@ -78,7 +173,7 @@ class SyncConfig(models.Model):
         )
 
         if not uid:
-            raise ValidationError('Autenticación fallida contra la base remota')
+            raise ValidationError('Autenticación fallida contra la base remota. Verifique URL, Base de Datos, Usuario y Contraseña.')
 
         return uid, models
 
@@ -139,10 +234,6 @@ class SyncConfig(models.Model):
                 [[('active', '=', True)]]
             )
 
-            # Guardar resultado en el modelo (si existe el campo)
-            if hasattr(self, 'remote_product_count'):
-                self.remote_product_count = product_count
-
             return product_count
 
         except Exception as e:
@@ -152,9 +243,7 @@ class SyncConfig(models.Model):
                 str(e),
                 exc_info=True
             )
-            raise UserError(
-                f'Error al obtener la cantidad de productos remotos:\n{str(e)}'
-            )
+            return 0
 
     def _sync_products_from_remote(self, batch_size=100):
         self.ensure_one()
@@ -229,35 +318,6 @@ class SyncConfig(models.Model):
             'updated': total_updated
         }
 
-    def _create_or_update_product(self, remote_product_data):
-        """Crea o actualiza un producto en la base local"""
-        product_obj = self.env['product.product']
-        
-        # Buscar producto por referencia interna o código de barras
-        domain = []
-        if remote_product_data.get('default_code'):
-            domain.append(('default_code', '=', remote_product_data['default_code']))
-        elif remote_product_data.get('barcode'):
-            domain.append(('barcode', '=', remote_product_data['barcode']))
-        else:
-            # Si no hay referencia, buscar por nombre
-            domain.append(('name', '=', remote_product_data['name']))
-        
-        existing_product = product_obj.search(domain, limit=1)
-        
-        vals = {
-            'name': remote_product_data['name'],
-            'default_code': remote_product_data.get('default_code'),
-            'list_price': remote_product_data.get('list_price', 0.0),
-            'standard_price': remote_product_data.get('standard_price', 0.0),
-            'barcode': remote_product_data.get('barcode'),
-        }
-        
-        if existing_product:
-            existing_product.write(vals)
-        else:
-            product_obj.create(vals)
-
     @api.constrains('remote_url')
     def _check_urls(self):
         for record in self:
@@ -265,6 +325,7 @@ class SyncConfig(models.Model):
                 raise ValidationError('La URL debe comenzar con http:// o https://')
 
     def test_connection(self):
+        """Prueba la conexión con el servidor remoto y devuelve una notificación al usuario."""
         try:
             common, _models = self._get_xmlrpc_proxies()
             uid = common.authenticate(
@@ -278,316 +339,32 @@ class SyncConfig(models.Model):
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': 'Éxito',
-                        'message': 'Conexión exitosa con el servidor remoto',
+                        'title': _('Conexión Exitosa'),
+                        'message': _('Se ha establecido conexión con la base de datos remota correctamente.'),
                         'type': 'success',
+                        'sticky': False,
                     }
                 }
             else:
-                raise Exception('Autenticación fallida')
+                raise ValidationError(_('Autenticación fallida.'))
         except Exception as e:
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Error',
-                    'message': f'Error de conexión: {str(e)}',
+                    'title': _('Error de Conexión'),
+                    'message': str(e),
                     'type': 'danger',
+                    'sticky': True,
                 }
             }
 
-    # --- Métodos para Acciones Planificadas ---
-
-    def action_manual_sync(self):
-        """Ejecuta la sincronización manualmente para este registro"""
-        self.ensure_one()
-        self.cron_sync_all(config_id=self.id, execution_type='manual')
-        self.update_stats()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Sincronización Iniciada',
-                'message': f'Se ha ejecutado la sincronización para {self.name}',
-                'type': 'success',
-                'sticky': False,
-            }
-        }
-
-    def action_sync_pricelists_to_remote(self, execution_type='manual'):
-        self.ensure_one()
-
-        uid, models_proxy = self._get_remote_connection()
-
-        Pricelist = self.env['product.pricelist']
-        PricelistItem = self.env['product.pricelist.item']
-
-        synced = 0
-        updated = 0
-        failed = 0
-        
-        log = self.env['sync.pictures.log'].create({
-            'config_id': self.id,
-            'status': 'in_progress',
-            'execution_type': execution_type,
-            'brand': 'LISTAS DE PRECIOS'
-        })
-        
-        pricelist_line_vals = []
-
-        for pricelist in Pricelist.search([('sync_to_remote', '=', True)]):
-
-            # Buscar lista remota por nombre
-            remote_ids = models_proxy.execute_kw(
-                self.remote_database,
-                uid,
-                self.remote_password,
-                'product.pricelist',
-                'search',
-                [[('name', '=', pricelist.name)]],
-                {'limit': 1}
-            )
-
-            # Buscar moneda remota por código (USD, COP, etc)
-            remote_currency_ids = models_proxy.execute_kw(
-                self.remote_database,
-                uid,
-                self.remote_password,
-                'res.currency',
-                'search',
-                [[('name', '=', pricelist.currency_id.name)]],
-                {'limit': 1}
-            )
-            remote_currency_id = remote_currency_ids[0] if remote_currency_ids else False
-
-            pricelist_vals = {
-                'name': pricelist.name,
-                'active': pricelist.active,
-            }
-            if remote_currency_id:
-                pricelist_vals['currency_id'] = remote_currency_id
-
-            # Crear o actualizar lista de precios
-            if remote_ids:
-                remote_pricelist_id = remote_ids[0]
-                models_proxy.execute_kw(
-                    self.remote_database,
-                    uid,
-                    self.remote_password,
-                    'product.pricelist',
-                    'write',
-                    [[remote_pricelist_id], pricelist_vals]
-                )
-                updated += 1
-            else:
-                remote_pricelist_id = models_proxy.execute_kw(
-                    self.remote_database,
-                    uid,
-                    self.remote_password,
-                    'product.pricelist',
-                    'create',
-                    [pricelist_vals]
-                )
-                synced += 1
-
-            # Eliminar reglas remotas existentes (evita inconsistencias)
-            remote_items = models_proxy.execute_kw(
-                self.remote_database,
-                uid,
-                self.remote_password,
-                'product.pricelist.item',
-                'search',
-                [[('pricelist_id', '=', remote_pricelist_id)]]
-            )
-
-            if remote_items:
-                models_proxy.execute_kw(
-                    self.remote_database,
-                    uid,
-                    self.remote_password,
-                    'product.pricelist.item',
-                    'unlink',
-                    [remote_items]
-                )
-
-            # Crear reglas de precios
-            for item in PricelistItem.search([('pricelist_id', '=', pricelist.id)]):
-
-                item_vals = {
-                    'pricelist_id': remote_pricelist_id,
-                    'applied_on': item.applied_on,
-                    'min_quantity': item.min_quantity,
-                    'compute_price': item.compute_price,
-                    'fixed_price': item.fixed_price,
-                    'percent_price': item.percent_price,
-                    'price_discount': item.price_discount,
-                    'price_surcharge': item.price_surcharge,
-                    'price_round': item.price_round,
-                    'price_min_margin': item.price_min_margin,
-                    'price_max_margin': item.price_max_margin,
-                    'base': item.base,
-                }
-
-                # Resolver dependencias (producto / plantilla / categoría)
-                if item.product_id:
-                    remote_product = models_proxy.execute_kw(
-                        self.remote_database,
-                        uid,
-                        self.remote_password,
-                        'product.product',
-                        'search',
-                        [[('default_code', '=', item.product_id.default_code)]],
-                        {'limit': 1}
-                    )
-                    if remote_product:
-                        item_vals['product_id'] = remote_product[0]
-                    else:
-                        continue
-
-                if item.product_tmpl_id:
-                    # Buscar por default_code si tiene, si no por nombre
-                    tmpl_domain = [('name', '=', item.product_tmpl_id.name)]
-                    if item.product_tmpl_id.default_code:
-                        tmpl_domain = [('default_code', '=', item.product_tmpl_id.default_code)]
-                    
-                    remote_template = models_proxy.execute_kw(
-                        self.remote_database,
-                        uid,
-                        self.remote_password,
-                        'product.template',
-                        'search',
-                        [tmpl_domain],
-                        {'limit': 1}
-                    )
-                    if remote_template:
-                        item_vals['product_tmpl_id'] = remote_template[0]
-                    else:
-                        continue
-
-                if item.categ_id:
-                    remote_category = models_proxy.execute_kw(
-                        self.remote_database,
-                        uid,
-                        self.remote_password,
-                        'product.category',
-                        'search',
-                        [[('name', '=', item.categ_id.name)]],
-                        {'limit': 1}
-                    )
-                    if remote_category:
-                        item_vals['categ_id'] = remote_category[0]
-                    else:
-                        continue
-
-                try:
-                    models_proxy.execute_kw(
-                        self.remote_database,
-                        uid,
-                        self.remote_password,
-                        'product.pricelist.item',
-                        'create',
-                        [item_vals]
-                    )
-                except Exception as e:
-                    failed += 1
-                    pricelist_line_vals.append((0, 0, {
-                        'pricelist_name': pricelist.name,
-                        'status': 'failed',
-                        'comment': f"Error en items: {str(e)}"
-                    }))
-                    continue
-
-            pricelist_line_vals.append((0, 0, {
-                'pricelist_name': pricelist.name,
-                'status': 'synced',
-                'comment': 'Sincronizada correctamente'
-            }))
-
-        log.write({
-            'status': 'completed',
-            'pricelists_synced': synced + updated,
-            'pricelists_failed': failed,
-            'pricelist_line_ids': pricelist_line_vals
-        })
-
-        return {
-            'status': 'success',
-            'created_pricelists': synced,
-            'updated_pricelists': updated
-        }
-
-
-
-    def cron_sync_all(self, config_id=None, execution_type='auto'):
-        """Método principal llamado por el Cron o manualmente para múltiples clientes"""
-        domain = [('active', '=', True)]
-        if config_id:
-            domain.append(('id', '=', config_id))
-            
-        configs = self.search(domain)
-        for config in configs:
-            # 0. Sincronización de Productos (Pull desde remoto)
-            if config.sync_products:
-                try:
-                    config._sync_products_from_remote()
-                except Exception as e:
-                    pass
-            
-            # 1. Sincronización de Imágenes
-            if config.sync_images:
-                try:
-                    wizard = self.env['sync.pictures.wizard'].sudo().with_context(active_test=False).create({
-                        'config_id': config.id,
-                        'execution_type': execution_type
-                    })
-                    wizard.action_sync_pictures()
-                except Exception as e:
-                    self.env['sync.pictures.log'].create({
-                        'config_id': config.id,
-                        'status': 'failed',
-                        'error_message': f"Error en imágenes: {str(e)}",
-                        'execution_type': execution_type,
-                    })
-            
-            # 2. Sincronización de Listas de Precios
-            if config.sync_pricelists:
-                try:
-                    config._sync_pricelists_to_remote(execution_type=execution_type)
-                except Exception as e:
-                    pass
-            
-            # 3. Sincronización de Ventas
-            if config.sync_sales:
-                orders = self.env['sale.order'].search([('state', '=', 'sale'), ('is_synced', '=', False)])
-                for order in orders:
-                    try:
-                        order.with_context(omni_sync_config_id=config.id).action_sync_order()
-                    except:
-                        continue
-            
-            config.last_sync_date = fields.Datetime.now()
-            config.update_stats()
-
-    def action_sync_products_to_remote(self):
-        """Sincroniza productos locales hacia el remoto"""
-        self.ensure_one()
-        res = self._sync_products_from_remote()
-        self.update_stats()
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Sincronización de Productos',
-                'message': f"Creados: {res.get('created', 0)}, Actualizados: {res.get('updated', 0)}",
-                'type': 'success',
-            }
-        }
-
-    def action_sync_images_only(self):
+    def action_sync_images_now(self):
+        """Inicia el proceso de sincronización de imágenes de forma manual."""
         self.ensure_one()
         wizard = self.env['sync.pictures.wizard'].create({
             'config_id': self.id,
-            'execution_type': 'manual',
-            'sync_all_brands': True
+            'brands_to_sync': self.brands_to_sync,
+            'batch_size': self.batch_size,
         })
-        return wizard.action_sync_pictures()
+        return wizard.action_sync()

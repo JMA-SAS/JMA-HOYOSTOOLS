@@ -1,6 +1,10 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_omni_sync_config,omni.sync.config,model_omni_sync_config,base.group_system,1,1,1,1
-access_sync_pictures_log,sync.pictures.log,model_sync_pictures_log,base.group_user,1,1,1,1
-access_sync_product_map,sync.product.map,model_sync_product_map,base.group_user,1,1,1,1
-access_sync_pictures_wizard,sync.pictures.wizard,model_sync_pictures_wizard,base.group_user,1,1,1,1
-access_sync_pictures_log_line,sync.pictures.log.line,model_sync_pictures_log_line,base.group_user,1,1,1,1
+access_omni_sync_config_manager,omni.sync.config manager,model_omni_sync_config,group_omni_sync_manager,1,1,1,1
+access_omni_sync_config_user,omni.sync.config user,model_omni_sync_config,group_omni_sync_user,1,0,0,0
+access_sync_pictures_log_manager,sync.pictures.log manager,model_sync_pictures_log,group_omni_sync_manager,1,1,1,1
+access_sync_pictures_log_user,sync.pictures.log user,model_sync_pictures_log,group_omni_sync_user,1,0,0,0
+access_sync_product_map_manager,sync.product.map manager,model_sync_product_map,group_omni_sync_manager,1,1,1,1
+access_sync_product_map_user,sync.product.map user,model_sync_product_map,group_omni_sync_user,1,0,0,0
+access_sync_pictures_wizard_manager,sync.pictures.wizard manager,model_sync_pictures_wizard,group_omni_sync_manager,1,1,1,1
+access_sync_pictures_log_line_manager,sync.pictures.log.line manager,model_sync_pictures_log_line,group_omni_sync_manager,1,1,1,1
+access_sync_pictures_log_line_user,sync.pictures.log.line user,model_sync_pictures_log_line,group_omni_sync_user,1,0,0,0

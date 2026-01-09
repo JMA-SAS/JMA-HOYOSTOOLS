@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="sale_order_view_tree_inherit_sync_dashboard" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.sync.dashboard</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <!-- Inyectar indicadores de sincronización antes de la tabla de registros -->
+            <xpath expr="//tree" position="before">
+                <div class="d-flex flex-wrap gap-3 p-3 bg-light border-bottom" invisible="not context.get('search_default_synced')">
+                    <div class="flex-fill text-center p-2 bg-white rounded shadow-sm border-start border-primary border-4">
+                        <div class="text-uppercase text-muted small font-weight-bold">Ventas Sincronizadas</div>
+                        <div class="h4 mb-0 font-weight-bold text-primary">
+                            <span class="o_stat_value">
+                                <t t-out="len(records) if records else 0"/>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-fill text-center p-2 bg-white rounded shadow-sm border-start border-warning border-4">
+                        <div class="text-uppercase text-muted small font-weight-bold">Valor Promedio Sinc.</div>
+                        <div class="h4 mb-0 font-weight-bold text-warning">
+                            <span class="o_stat_value">
+                                $ <t t-out="sum(records.mapped('amount_total')) / len(records) if records else 0.0" t-options='{"widget": "float", "precision": 2}'/>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

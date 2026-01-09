@@ -1,4 +1,4 @@
-from odoo import models, fields, _
+from odoo import models, fields, api, _
 import xmlrpc.client
 import logging
 
@@ -8,12 +8,32 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
-    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
-    sync_log = fields.Html(string="Resumen de Sincronización", readonly=True, copy=False)
-    remote_order_ref = fields.Char(string="Referencia Remota", readonly=True, copy=False)
-    is_remote_order = fields.Boolean(string="Es Pedido Remoto", default=False, help="Indica si este pedido fue creado desde una instancia remota.")
+    is_synced = fields.Boolean(
+        string="Sincronizado", 
+        readonly=True, 
+        copy=False,
+        help="Indica si esta factura ha disparado la creación de una orden de compra en la instancia remota."
+    )
+    sync_log = fields.Html(
+        string="Resumen de Sincronización", 
+        readonly=True, 
+        copy=False,
+        help="Registro visual del proceso de creación de la orden de compra remota."
+    )
+    remote_order_ref = fields.Char(
+        string="Referencia Remota", 
+        readonly=True, 
+        copy=False,
+        help="Referencia de la Orden de Compra creada en el servidor remoto."
+    )
+    is_remote_order = fields.Boolean(
+        string="Es Pedido Remoto", 
+        default=False, 
+        help="Identificador técnico para facturas que provienen de procesos de sincronización remota."
+    )
 
     def action_post(self):
+        """Extensión de la validación de factura para sincronizar compras."""
         res = super().action_post()
 
         # Buscar todas las configuraciones activas con sync de compras habilitado
@@ -31,6 +51,7 @@ class AccountMove(models.Model):
         return res
 
     def _sync_to_remote_purchase(self, config_rec):
+        """Lógica interna para conectar con el remoto y crear la OC."""
         url = config_rec.remote_url
         db = config_rec.remote_database
         username = config_rec.remote_username
@@ -58,7 +79,7 @@ class AccountMove(models.Model):
                 return
 
             for move in self:
-                if move.move_type != "out_invoice":
+                if move.move_type != "out_invoice" or move.is_synced or move.is_remote_order:
                     continue
 
                 vendor_partner = move.partner_id
@@ -136,12 +157,16 @@ class AccountMove(models.Model):
                 # ------------------------------
                 # Crear Orden de Compra
                 # ------------------------------
+                # Obtener la URL base de esta instancia para enviarla como origen
+                base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+                origin_info = f"{base_url} ({self.env.cr.dbname})"
+                
                 po_vals = {
                     'partner_id': remote_partner_id,
                     'partner_ref': move.name,
                     'order_line': order_lines,
                     'is_synced': True,
-                    'sync_connection_name': config_rec.name,
+                    'sync_connection_name': origin_info,
                 }
 
                 purchase_id = models_proxy.execute_kw(
@@ -211,5 +236,27 @@ class AccountMove(models.Model):
 class PurchaseOrder(models.Model):
     _inherit = "purchase.order"
 
-    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
-    sync_connection_name = fields.Char(string="Conexión Sincronizada", readonly=True, copy=False)
+    is_synced = fields.Boolean(
+        string="Sincronizado", 
+        readonly=True, 
+        copy=False,
+        help="Indica si esta orden de compra fue generada automáticamente desde una factura sincronizada."
+    )
+    sync_connection_name = fields.Char(
+        string="Conexión Sincronizada", 
+        readonly=True, 
+        copy=False,
+        help="Nombre de la base de datos o URL de origen que envió los datos para crear esta orden de compra."
+    )
+
+    # Campos para el dashboard
+    @api.model
+    def get_sync_stats(self):
+        """Devuelve estadísticas de sincronización para el dashboard"""
+        synced_orders = self.search([('is_synced', '=', True)])
+        total_count = len(synced_orders)
+        avg_value = sum(synced_orders.mapped('amount_total')) / total_count if total_count > 0 else 0.0
+        return {
+            'total_count': total_count,
+            'avg_value': avg_value,
+        }

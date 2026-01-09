@@ -26,6 +26,7 @@
         'utm',
     ],
     'data': [
+        'security/security.xml',
         'security/ir.model.access.csv',
         'data/ir_cron_data.xml',
         'views/sync_dashboard_views.xml',
