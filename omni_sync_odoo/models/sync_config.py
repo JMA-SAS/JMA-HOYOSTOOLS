@@ -43,26 +43,23 @@ class SyncConfig(models.Model):
         self.ensure_one()
         import xmlrpc.client
 
-        # Limpiar URL base
         url = (self.remote_url or '').strip().rstrip('/')
 
         if not url.startswith('http'):
             url = 'https://' + url
 
-        # Endpoints correctos para CloudPepper (slash final)
-        common_url = f"{url}/xmlrpc/2/common/"
-        object_url = f"{url}/xmlrpc/2/object/"
-
         common = xmlrpc.client.ServerProxy(
-            common_url,
+            f"{url}/xmlrpc/2/common",
             allow_none=True
         )
+
         models = xmlrpc.client.ServerProxy(
-            object_url,
+            f"{url}/xmlrpc/2/object",
             allow_none=True
         )
 
         return common, models
+
 
     def update_stats(self):
         """Actualiza las estadísticas de forma manual o tras una sincronización para no ralentizar el tablero"""
