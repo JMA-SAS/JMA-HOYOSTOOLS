@@ -60,6 +60,22 @@ class SyncConfig(models.Model):
 
         return common, models
 
+    def _get_remote_connection(self):
+        self.ensure_one()
+
+        common, models = self._get_xmlrpc_proxies()
+
+        uid = common.authenticate(
+            self.remote_database,
+            self.remote_username,
+            self.remote_password,
+            {}
+        )
+
+        if not uid:
+            raise ValidationError('Autenticación fallida contra la base remota')
+
+        return uid, models
 
     def update_stats(self):
         """Actualiza las estadísticas de forma manual o tras una sincronización para no ralentizar el tablero"""
@@ -145,7 +161,7 @@ class SyncConfig(models.Model):
         while True:
             try:
                 remote_products = models_proxy.execute_kw(
-                    self.remote_db,
+                    self.remote_database,
                     uid,
                     self.remote_password,
                     'product.product',
@@ -305,7 +321,7 @@ class SyncConfig(models.Model):
 
             # Buscar lista remota por nombre
             remote_ids = models_proxy.execute_kw(
-                self.remote_db,
+                self.remote_database,
                 uid,
                 self.remote_password,
                 'product.pricelist',
@@ -324,7 +340,7 @@ class SyncConfig(models.Model):
             if remote_ids:
                 remote_pricelist_id = remote_ids[0]
                 models_proxy.execute_kw(
-                    self.remote_db,
+                    self.remote_database,
                     uid,
                     self.remote_password,
                     'product.pricelist',
@@ -334,7 +350,7 @@ class SyncConfig(models.Model):
                 updated += 1
             else:
                 remote_pricelist_id = models_proxy.execute_kw(
-                    self.remote_db,
+                    self.remote_database,
                     uid,
                     self.remote_password,
                     'product.pricelist',
@@ -345,7 +361,7 @@ class SyncConfig(models.Model):
 
             # Eliminar reglas remotas existentes (evita inconsistencias)
             remote_items = models_proxy.execute_kw(
-                self.remote_db,
+                self.remote_database,
                 uid,
                 self.remote_password,
                 'product.pricelist.item',
@@ -355,7 +371,7 @@ class SyncConfig(models.Model):
 
             if remote_items:
                 models_proxy.execute_kw(
-                    self.remote_db,
+                    self.remote_database,
                     uid,
                     self.remote_password,
                     'product.pricelist.item',
@@ -383,7 +399,7 @@ class SyncConfig(models.Model):
                 # Resolver dependencias (producto / plantilla / categoría)
                 if item.product_id:
                     remote_product = models_proxy.execute_kw(
-                        self.remote_db,
+                        self.remote_database,
                         uid,
                         self.remote_password,
                         'product.product',
@@ -398,7 +414,7 @@ class SyncConfig(models.Model):
 
                 if item.product_tmpl_id:
                     remote_template = models_proxy.execute_kw(
-                        self.remote_db,
+                        self.remote_database,
                         uid,
                         self.remote_password,
                         'product.template',
@@ -413,7 +429,7 @@ class SyncConfig(models.Model):
 
                 if item.categ_id:
                     remote_category = models_proxy.execute_kw(
-                        self.remote_db,
+                        self.remote_database,
                         uid,
                         self.remote_password,
                         'product.category',
@@ -427,7 +443,7 @@ class SyncConfig(models.Model):
                         continue
 
                 models_proxy.execute_kw(
-                    self.remote_db,
+                    self.remote_database,
                     uid,
                     self.remote_password,
                     'product.pricelist.item',
