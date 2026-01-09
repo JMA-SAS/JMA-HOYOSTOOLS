@@ -131,22 +131,22 @@ class AccountMove(models.Model):
                 # ------------------------------
                 # Campaña (opcional)
                 # ------------------------------
-                remote_campaign_id = False
-                if move.campaign_id:
-                    campaign_ids = models_proxy.execute_kw(
-                        db, uid, password,
-                        'utm.campaign', 'search',
-                        [[('name', '=', move.campaign_id.name)]],
-                        {'limit': 1}
-                    )
-                    if campaign_ids:
-                        remote_campaign_id = campaign_ids[0]
-                    else:
-                        remote_campaign_id = models_proxy.execute_kw(
-                            db, uid, password,
-                            'utm.campaign', 'create',
-                            [{'name': move.campaign_id.name}]
-                        )
+             #   remote_campaign_id = False
+             #   if move.campaign_id:
+             #       campaign_ids = models_proxy.execute_kw(
+             #           db, uid, password,
+             #           'utm.campaign', 'search',
+             #           [[('name', '=', move.campaign_id.name)]],
+             #           {'limit': 1}
+             #       )
+             #       if campaign_ids:
+             #           remote_campaign_id = campaign_ids[0]
+             #       else:
+             #           remote_campaign_id = models_proxy.execute_kw(
+             #               db, uid, password,
+             #               'utm.campaign', 'create',
+             #               [{'name': move.campaign_id.name}]
+             #           )
 
                 # ------------------------------
                 # Crear Orden de Compra
