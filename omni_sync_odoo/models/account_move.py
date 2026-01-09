@@ -30,12 +30,6 @@ class AccountMove(models.Model):
 
         return res
 
-class PurchaseOrder(models.Model):
-    _inherit = "purchase.order"
-
-    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
-    sync_connection_name = fields.Char(string="Conexión Sincronizada", readonly=True, copy=False)
-
     def _sync_to_remote_purchase(self, config_rec):
         url = config_rec.remote_url
         db = config_rec.remote_database
@@ -140,26 +134,6 @@ class PurchaseOrder(models.Model):
                     continue
 
                 # ------------------------------
-                # Campaña (opcional)
-                # ------------------------------
-             #   remote_campaign_id = False
-             #   if move.campaign_id:
-             #       campaign_ids = models_proxy.execute_kw(
-             #           db, uid, password,
-             #           'utm.campaign', 'search',
-             #           [[('name', '=', move.campaign_id.name)]],
-             #           {'limit': 1}
-             #       )
-             #       if campaign_ids:
-             #           remote_campaign_id = campaign_ids[0]
-             #       else:
-             #           remote_campaign_id = models_proxy.execute_kw(
-             #               db, uid, password,
-             #               'utm.campaign', 'create',
-             #               [{'name': move.campaign_id.name}]
-             #           )
-
-                # ------------------------------
                 # Crear Orden de Compra
                 # ------------------------------
                 po_vals = {
@@ -170,10 +144,6 @@ class PurchaseOrder(models.Model):
                     'sync_connection_name': config_rec.name,
                 }
 
-                #if remote_campaign_id:
-                #    po_vals['campaign_id'] = remote_campaign_id
-                remote_campaign_id = False
-                
                 purchase_id = models_proxy.execute_kw(
                     db, uid, password,
                     'purchase.order', 'create',
@@ -237,3 +207,9 @@ class PurchaseOrder(models.Model):
                 body=_("Error en sincronización remota con %s: %s")
                 % (config_rec.name, str(e))
             )
+
+class PurchaseOrder(models.Model):
+    _inherit = "purchase.order"
+
+    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
+    sync_connection_name = fields.Char(string="Conexión Sincronizada", readonly=True, copy=False)
