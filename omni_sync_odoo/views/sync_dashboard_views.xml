@@ -47,6 +47,9 @@
                                                 <a role="menuitem" type="object" name="test_connection" class="dropdown-item">Probar Conexión</a>
                                                 <div class="dropdown-divider"/>
                                                 <a role="menuitem" type="object" name="action_manual_sync" class="dropdown-item text-primary">Sincronizar Todo</a>
+                                                <div class="dropdown-divider"/>
+                                                <a role="menuitem" type="object" name="action_sync_products_to_remote" class="dropdown-item">Sincronizar Productos</a>
+                                                <a role="menuitem" type="object" name="action_sync_images_only" class="dropdown-item">Sincronizar Imágenes</a>
                                                 <a role="menuitem" type="object" name="action_sync_pricelists_to_remote" class="dropdown-item">Sincronizar Precios</a>
                                                 <div class="dropdown-divider"/>
                                                 <a role="menuitem" type="object" name="update_stats" class="dropdown-item">Actualizar Estadísticas</a>

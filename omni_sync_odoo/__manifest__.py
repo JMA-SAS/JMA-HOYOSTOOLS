@@ -32,6 +32,7 @@
         'views/sync_config_views.xml',
         'views/sync_pictures_views.xml',
         'views/sale_order_views.xml',
+        'views/account_move_views.xml',
         'views/product_pricelist_views.xml',
         'wizards/sync_pictures_wizard_views.xml',
         'views/menu_views.xml',

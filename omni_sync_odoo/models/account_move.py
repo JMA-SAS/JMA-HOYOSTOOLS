@@ -8,6 +8,11 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
 
+    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
+    sync_log = fields.Html(string="Resumen de Sincronización", readonly=True, copy=False)
+    remote_order_ref = fields.Char(string="Referencia Remota", readonly=True, copy=False)
+    is_remote_order = fields.Boolean(string="Es Pedido Remoto", default=False, help="Indica si este pedido fue creado desde una instancia remota.")
+
     def action_post(self):
         res = super().action_post()
 
@@ -24,6 +29,12 @@ class AccountMove(models.Model):
             self._sync_to_remote_purchase(config_rec)
 
         return res
+
+class PurchaseOrder(models.Model):
+    _inherit = "purchase.order"
+
+    is_synced = fields.Boolean(string="Sincronizado", readonly=True, copy=False)
+    sync_connection_name = fields.Char(string="Conexión Sincronizada", readonly=True, copy=False)
 
     def _sync_to_remote_purchase(self, config_rec):
         url = config_rec.remote_url
@@ -155,6 +166,8 @@ class AccountMove(models.Model):
                     'partner_id': remote_partner_id,
                     'partner_ref': move.name,
                     'order_line': order_lines,
+                    'is_synced': True,
+                    'sync_connection_name': config_rec.name,
                 }
 
                 #if remote_campaign_id:
@@ -175,10 +188,47 @@ class AccountMove(models.Model):
                         [[purchase_id]]
                     )
 
+                # Obtener el nombre de la OC remota
+                remote_po_name = models_proxy.execute_kw(db, uid, password, 'purchase.order', 'read', [[purchase_id]], {'fields': ['name']})
+                remote_ref = remote_po_name[0].get('name') if remote_po_name else str(purchase_id)
+
+                log_html = f"""
+                    <div style="width: 100%; margin-top: 10px; font-family: sans-serif;">
+                        <table style="width: 100%; border-collapse: separate; border-spacing: 10px; table-layout: fixed;">
+                            <tr>
+                                <td style="width: 25%; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #007bff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="font-size: 11px; color: #666; text-uppercase; font-weight: bold; margin-bottom: 5px;">Referencia Remota</div>
+                                    <div style="font-size: 16px; color: #007bff; font-weight: bold;">{remote_ref}</div>
+                                </td>
+                                <td style="width: 25%; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #28a745; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="font-size: 11px; color: #666; text-uppercase; font-weight: bold; margin-bottom: 5px;">ID Remoto</div>
+                                    <div style="font-size: 16px; color: #28a745; font-weight: bold;">{purchase_id}</div>
+                                </td>
+                                <td style="width: 25%; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #ffc107; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="font-size: 11px; color: #666; text-uppercase; font-weight: bold; margin-bottom: 5px;">Conexión</div>
+                                    <div style="font-size: 14px; color: #333; font-weight: bold; word-break: break-all;">{config_rec.name}</div>
+                                </td>
+                                <td style="width: 25%; background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 5px solid #17a2b8; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="font-size: 11px; color: #666; text-uppercase; font-weight: bold; margin-bottom: 5px;">Líneas Sinc.</div>
+                                    <div style="font-size: 16px; color: #17a2b8; font-weight: bold;">{len(order_lines)}</div>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="text-align: right; padding: 10px; font-size: 11px; color: #999; font-style: italic;">
+                            Sincronizado el: {fields.Datetime.now()}
+                        </div>
+                    </div>
+                """
+                move.write({
+                    'is_synced': True,
+                    'remote_order_ref': remote_ref,
+                    'sync_log': log_html
+                })
+
                 move.message_post(
                     body=_(
-                        "Orden de Compra creada en remoto [%s] (ID: %s)"
-                    ) % (config_rec.name, purchase_id)
+                        "Orden de Compra creada en remoto [%s] (Referencia: %s)"
+                    ) % (config_rec.name, remote_ref)
                 )
 
         except Exception as e:

@@ -10,8 +10,8 @@
                 <field name="brand"/>
                 <field name="execution_type" widget="badge" decoration-info="execution_type == 'manual'" decoration-warning="execution_type == 'auto'"/>
                 <field name="total_products"/>
-                <field name="products_synced"/>
-                <field name="products_skipped"/>
+                <field name="products_synced" string="Prod. Sinc."/>
+                <field name="pricelists_synced" string="Listas Sinc."/>
                 <field name="status" widget="badge" decoration-success="status == 'completed'" decoration-danger="status == 'failed'"/>
             </tree>
         </field>
@@ -36,7 +36,7 @@
                         <group>
                             <field name="total_products"/>
                             <field name="products_synced"/>
-                            <field name="products_skipped"/>
+                            <field name="pricelists_synced"/>
                             <field name="duration"/>
                         </group>
                     </group>
