@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sync_pictures_log_tree" model="ir.ui.view">
+        <field name="name">sync.pictures.log.tree</field>
+        <field name="model">sync.pictures.log</field>
+        <field name="arch" type="xml">
+            <tree create="false" edit="false">
+                <field name="create_date"/>
+                <field name="config_id"/>
+                <field name="brand"/>
+                <field name="execution_type" widget="badge" decoration-info="execution_type == 'manual'" decoration-warning="execution_type == 'auto'"/>
+                <field name="total_products"/>
+                <field name="products_synced"/>
+                <field name="products_skipped"/>
+                <field name="status" widget="badge" decoration-success="status == 'completed'" decoration-danger="status == 'failed'"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sync_pictures_log_form" model="ir.ui.view">
+        <field name="name">sync.pictures.log.form</field>
+        <field name="model">sync.pictures.log</field>
+        <field name="arch" type="xml">
+            <form string="Log de Sincronización" create="false" edit="false">
+                <header>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="create_date"/>
+                            <field name="config_id"/>
+                            <field name="brand"/>
+                            <field name="execution_type"/>
+                        </group>
+                        <group>
+                            <field name="total_products"/>
+                            <field name="products_synced"/>
+                            <field name="products_skipped"/>
+                            <field name="duration"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detalles de Productos">
+                            <field name="line_ids" readonly="1">
+                                <tree decoration-success="status == 'synced'" decoration-warning="status == 'skipped'" decoration-danger="status == 'failed'" limit="1000">
+                                    <field name="status" widget="badge" decoration-success="status == 'synced'" decoration-warning="status == 'skipped'" decoration-danger="status == 'failed'"/>
+                                    <field name="product_name" string="Nombre del Producto"/>
+                                    <field name="product_code" string="Código de Referencia"/>
+                                    <field name="comment" string="Comentario de Sincronización"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Detalles de Listas de Precios">
+                            <field name="pricelist_line_ids" readonly="1">
+                                <tree decoration-success="status == 'synced'" decoration-danger="status == 'failed'">
+                                    <field name="status" widget="badge" decoration-success="status == 'synced'" decoration-danger="status == 'failed'"/>
+                                    <field name="pricelist_name" string="Lista de Precios"/>
+                                    <field name="comment" string="Comentario de Sincronización"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Error" invisible="not error_message">
+                            <field name="error_message" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_sync_pictures_log_search" model="ir.ui.view">
+        <field name="name">sync.pictures.log.search</field>
+        <field name="model">sync.pictures.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="config_id"/>
+                <field name="brand"/>
+                <field name="line_ids" string="Producto o Código" filter_domain="['|', ('line_ids.product_name', 'ilike', self), ('line_ids.product_code', 'ilike', self)]"/>
+                <filter string="Exitosos" name="success" domain="[('status', '=', 'completed')]"/>
+                <filter string="Fallidos" name="failed" domain="[('status', '=', 'failed')]"/>
+                <separator/>
+                <filter string="Manual" name="manual" domain="[('execution_type', '=', 'manual')]"/>
+                <filter string="Automático" name="auto" domain="[('execution_type', '=', 'auto')]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Conexión" name="group_by_config" context="{'group_by': 'config_id'}"/>
+                    <filter string="Estado" name="group_by_status" context="{'group_by': 'status'}"/>
+                    <filter string="Fecha" name="group_by_date" context="{'group_by': 'create_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sync_pictures_log" model="ir.actions.act_window">
+        <field name="name">Logs de Sincronización</field>
+        <field name="res_model">sync.pictures.log</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

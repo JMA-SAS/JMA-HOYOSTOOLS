@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_sync" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.sync</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <header position="inside">
+                <!-- El botón se mantiene pero solo visible si falló la sincronización automática o para re-sincronizar -->
+                <button name="action_sync_order" string="Sincronizar Remoto" type="object" class="btn-primary" invisible="is_synced or state not in ['sale', 'done']"/>
+            </header>
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="is_synced" widget="boolean_toggle"/>
+                <field name="remote_order_ref" invisible="not is_synced"/>
+                <field name="is_remote_order" readonly="1" invisible="not is_remote_order"/>
+                <field name="meli_tracking_filename" invisible="1"/>
+                <field name="meli_tracking_pdf" filename="meli_tracking_filename"/>
+            </xpath>
+            
+            <!-- Indicadores en las líneas de pedido -->
+            <xpath expr="//field[@name='order_line']/tree/field[@name='name']" position="after">
+                <field name="sync_status" widget="badge" 
+                       decoration-success="sync_status == 'synced'" 
+                       decoration-danger="sync_status == 'failed'"
+                       optional="show"/>
+            </xpath>
+
+            <!-- Nueva pestaña de Resumen de Sincronización -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Resumen B4B SYNC" name="sync_summary" invisible="not is_synced">
+                    <div class="oe_title">
+                        <h2>LOG DE SINCRONIZACIÓN REMOTA</h2>
+                    </div>
+                    <field name="sync_log" nolabel="1" colspan="4"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

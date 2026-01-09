@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>B4B SYNC - Los 5 Pilares de Sincronización</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --info: #17a2b8;
+            --warning: #ffc107;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0;
+            background-color: #f4f7f6;
+        }
+        .hero {
+            background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            border-radius: 0 0 50px 50px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+        .container {
+            background: white;
+            margin: -60px 20px 40px 20px;
+            padding: 60px;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 3.5em; margin: 0; font-weight: 900; letter-spacing: -1px; }
+        h2 { 
+            color: var(--dark); 
+            text-align: center;
+            font-size: 2.2em;
+            margin-bottom: 40px;
+            font-weight: 800;
+            position: relative;
+        }
+        h2::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 5px;
+            background: var(--primary);
+            margin: 15px auto;
+            border-radius: 10px;
+        }
+        .pillars-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+        .pillar-card {
+            background: var(--light);
+            padding: 30px 20px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-10px);
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+        .pillar-card i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .pillar-card strong {
+            font-size: 1.4em;
+            display: block;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+        .detail-section {
+            margin-bottom: 50px;
+            padding: 30px;
+            border-radius: 20px;
+            background: #fff;
+            border: 1px solid #eee;
+        }
+        .detail-section h3 {
+            color: var(--primary);
+            font-size: 1.8em;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+        }
+        .detail-section h3 span {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 0.8em;
+        }
+        .improvement-tag {
+            display: inline-block;
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.85em;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .footer {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--dark);
+            color: #bdc3c7;
+            border-radius: 50px 50px 0 0;
+        }
+        .signature {
+            font-size: 1.4em;
+            color: white;
+            font-weight: 800;
+            margin-top: 20px;
+        }
+        .tech-list {
+            list-style: none;
+            padding: 0;
+        }
+        .tech-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        .tech-list li::before {
+            content: '✓';
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>B4B SYNC 2026</h1>
+        <p style="font-size: 1.5em; opacity: 0.9; font-weight: 300;">Ecosistema de Sincronización Inteligente para Odoo</p>
+    </div>
+
+    <div class="container">
+        <h2>Los 5 Pilares de Funcionalidad</h2>
+        
+        <div class="pillars-grid">
+            <div class="pillar-card" style="border-top: 6px solid #3498db;">
+                <strong>PRODUCTOS</strong>
+                <p>Maestros Unificados</p>
+            </div>
+            <div class="pillar-card" style="border-top: 6px solid #f1c40f;">
+                <strong>PRECIOS</strong>
+                <p>Tarifas Sincronizadas</p>
+            </div>
+            <div class="pillar-card" style="border-top: 6px solid #e67e22;">
+                <strong>IMÁGENES</strong>
+                <p>Galerías Multimedia</p>
+            </div>
+            <div class="pillar-card" style="border-top: 6px solid #2ecc71;">
+                <strong>VENTAS</strong>
+                <p>Pedidos Espejo</p>
+            </div>
+            <div class="pillar-card" style="border-top: 6px solid #9b59b6;">
+                <strong>COMPRAS</strong>
+                <p>Suministro Automático</p>
+            </div>
+        </div>
+
+        <h2>Documentación Detallada</h2>
+
+        <div class="detail-section">
+            <div class="improvement-tag">Pilar 1: Gestión de Productos</div>
+            <h3><span>1</span> Sincronización de Maestros</h3>
+            <p>El módulo permite la importación y actualización de productos desde una instancia remota de forma inteligente. Utiliza la <b>Referencia Interna (default_code)</b> como llave maestra para evitar duplicados y asegurar que la información técnica sea consistente en todo el ecosistema.</p>
+            <ul class="tech-list">
+                <li>Validación por Código de Barras y Referencia Interna.</li>
+                <li>Sincronización de categorías y descripciones técnicas.</li>
+                <li>Mapeo dinámico de productos entre instancias.</li>
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <div class="improvement-tag">Pilar 2: Control de Precios</div>
+            <h3><span>2</span> Tarifas y Listas de Precios</h3>
+            <p>Mantenga sus estrategias comerciales alineadas. El módulo sincroniza las <b>Listas de Precios</b> marcadas, permitiendo que los cambios en la base principal se reflejen automáticamente en las sucursales o bases remotas.</p>
+            <ul class="tech-list">
+                <li>Sincronización de reglas de precios y descuentos.</li>
+                <li>Manejo multimoneda integrado.</li>
+                <li>Actualización manual o programada desde el tablero.</li>
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <div class="improvement-tag">Pilar 3: Multimedia e Imágenes</div>
+            <h3><span>3</span> Sincronización de Imágenes por Marca</h3>
+            <p>Optimice la presentación visual de sus productos sin sobrecargar el servidor. El sistema procesa imágenes en <b>lotes configurables</b>, permitiendo filtrar por marcas específicas para una actualización selectiva y eficiente.</p>
+            <ul class="tech-list">
+                <li>Procesamiento en lotes (Batch) para evitar Timeouts.</li>
+                <li>Filtro avanzado por marcas comerciales.</li>
+                <li>Historial detallado de transferencias exitosas y fallidas.</li>
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <div class="improvement-tag">Pilar 4: Flujo de Ventas</div>
+            <h3><span>4</span> Pedidos de Venta Bidireccionales</h3>
+            <p>Al confirmar una venta local, el sistema crea automáticamente un pedido en la base remota. Se ha implementado un <b>Control de Origen Anti-Bucle</b> que evita que los pedidos se re-sincronicen infinitamente entre bases conectadas.</p>
+            <ul class="tech-list">
+                <li>Detección automática de origen (is_remote_order).</li>
+                <li>Alertas inteligentes para productos de otros proveedores.</li>
+                <li>Diseño de resumen fluido y adaptable al 100% del ancho.</li>
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <div class="improvement-tag">Pilar 5: Automatización de Compras</div>
+            <h3><span>5</span> Órdenes de Compra desde Facturas</h3>
+            <p>Automatice su cadena de suministro. Cuando se valida una <b>Factura de Cliente</b> en la base local, el módulo genera automáticamente una <b>Orden de Compra (PO)</b> en la base remota del proveedor, cerrando el ciclo comercial sin intervención manual.</p>
+            <ul class="tech-list">
+                <li>Generación de OC al validar facturas de venta.</li>
+                <li>Confirmación automática opcional de Órdenes de Compra.</li>
+                <li>Trazabilidad completa mediante mensajes en el chatter.</li>
+                <li>Asignación automática del contacto de la compañía como proveedor.</li>
+            </ul>
+        </div>
+
+        <div class="detail-section" style="background: #fff9c4; border-color: #fbc02d;">
+            <h3>🚀 Optimización de Rendimiento 2026</h3>
+            <p>El tablero de control ha sido rediseñado para soportar <b>múltiples conexiones simultáneas</b>. Las estadísticas ahora se almacenan localmente, eliminando los tiempos de espera al abrir el tablero y garantizando una experiencia de usuario instantánea y fluida.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Solución desarrollada para la excelencia operativa en Odoo v17</p>
+        <div class="signature">elaboro: Servicios de ingenieria JMA SAS - 2026</div>
+    </div>
+</body>
+</html>

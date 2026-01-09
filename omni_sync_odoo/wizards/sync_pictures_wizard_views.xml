@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sync_pictures_wizard_form" model="ir.ui.view">
+        <field name="name">sync.pictures.wizard.form</field>
+        <field name="model">sync.pictures.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="config_id" domain="[('active', '=', True), ('sync_images', '=', True)]"/>
+                    <field name="sync_all_brands"/>
+                    <field name="brand_to_sync" invisible="sync_all_brands"/>
+                </group>
+                <footer>
+                    <button name="action_sync_pictures" string="Sincronizar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sync_pictures_wizard" model="ir.actions.act_window">
+        <field name="name">Sincronizar Imágenes</field>
+        <field name="res_model">sync.pictures.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

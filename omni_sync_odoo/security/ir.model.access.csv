@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_omni_sync_config,omni.sync.config,model_omni_sync_config,base.group_system,1,1,1,1
+access_sync_pictures_log,sync.pictures.log,model_sync_pictures_log,base.group_user,1,1,1,1
+access_sync_product_map,sync.product.map,model_sync_product_map,base.group_user,1,1,1,1
+access_sync_pictures_wizard,sync.pictures.wizard,model_sync_pictures_wizard,base.group_user,1,1,1,1
+access_sync_pictures_log_line,sync.pictures.log.line,model_sync_pictures_log_line,base.group_user,1,1,1,1

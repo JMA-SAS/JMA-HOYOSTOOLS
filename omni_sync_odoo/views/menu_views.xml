@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_omni_sync_root" name="B4B SYNC" sequence="100" web_icon="omni_sync_odoo,static/description/icon.png"/>
+    
+    <menuitem id="menu_omni_sync_dashboard" name="Tablero" parent="menu_omni_sync_root" sequence="5" action="action_omni_sync_dashboard"/>
+    <menuitem id="menu_omni_sync_config" name="Parametrización" parent="menu_omni_sync_root" sequence="10" action="action_omni_sync_config"/>
+    
+    <menuitem id="menu_omni_sync_operations" name="Operaciones" parent="menu_omni_sync_root" sequence="20"/>
+    <menuitem id="menu_sync_pictures_wizard" name="Sincronizar Imágenes" parent="menu_omni_sync_operations" sequence="10" action="action_sync_pictures_wizard"/>
+    
+    <menuitem id="menu_omni_sync_logs" name="Logs" parent="menu_omni_sync_root" sequence="30"/>
+    <menuitem id="menu_sync_pictures_log" name="Logs de Imágenes" parent="menu_omni_sync_logs" sequence="10" action="action_sync_pictures_log"/>
+</odoo>

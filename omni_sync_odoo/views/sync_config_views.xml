@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_sync_config_form" model="ir.ui.view">
+        <field name="name">omni.sync.config.form</field>
+        <field name="model">omni.sync.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_manual_sync" string="Sincronizar Ahora" type="object" class="btn-primary" icon="fa-refresh"/>
+                    <button name="test_connection" string="Probar Conexión" type="object" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre de la Conexión"/></h1>
+                    </div>
+                    <group>
+                        <group string="Servidor Origen (Remoto)">
+                            <field name="remote_url"/>
+                            <field name="remote_database"/>
+                            <field name="remote_username"/>
+                            <field name="remote_password" password="1"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Funcionalidades a Sincronizar">
+                            <field name="sync_products"/>
+                            <field name="sync_images"/>
+                            <field name="sync_pricelists"/>
+                            <field name="sync_sales"/>
+                            <field name="sync_purchases"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Parametrización de Imágenes" invisible="not sync_images">                            <group>
+                                <field name="brands_to_sync"/>
+                                <field name="batch_size"/>
+                                <field name="timeout"/>
+                            </group>
+                        </page>
+                        <page string="Parametrización de Compras" invisible="not sync_purchases">
+                            <group>
+                                <field name="auto_confirm_po"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_omni_sync_config_tree" model="ir.ui.view">
+        <field name="name">omni.sync.config.tree</field>
+        <field name="model">omni.sync.config</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="remote_url"/>
+                <field name="sync_products"/>
+                <field name="sync_images"/>
+                <field name="sync_pricelists"/>
+                <field name="sync_sales"/>
+                <field name="sync_purchases"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_omni_sync_config" model="ir.actions.act_window">
+        <field name="name">Parametrización de Conexiones</field>
+        <field name="res_model">omni.sync.config</field>
+        <field name="view_mode">tree,kanban,form</field>
+    </record>
+</odoo>

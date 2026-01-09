@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_omni_sync_config_kanban" model="ir.ui.view">
+        <field name="name">omni.sync.config.kanban</field>
+        <field name="model">omni.sync.config</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" create="false">
+                <field name="name"/>
+                <field name="remote_url"/>
+                <field name="sync_products"/>
+                <field name="sync_images"/>
+                <field name="sync_sales"/>
+                <field name="sync_purchases"/>
+                <field name="total_synced_products"/>
+                <field name="total_synced_images"/>
+                <field name="total_synced_sales"/>
+                <field name="total_synced_purchases"/>
+                <field name="total_synced_pricelists"/>
+                <field name="sync_pricelists"/>
+                <field name="last_sync_date"/>
+                <field name="active"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click shadow-sm border-0 p-2 mb-2 bg-white rounded" style="width: 100%; max-width: 450px;">
+                            <div class="oe_kanban_details">
+                                <!-- Cabecera con Nombre y URL -->
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div style="max-width: 75%;">
+                                        <h6 class="text-primary mb-0 font-weight-bold text-truncate">
+                                            <field name="name"/>
+                                        </h6>
+                                        <div class="text-muted small text-truncate" style="font-size: 0.75rem;">
+                                            <i class="fa fa-link mr-1 text-info" title="URL Remota"/>
+                                            <field name="remote_url"/>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <a t-att-href="record.remote_url.value" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-2 mr-2" style="font-size: 0.65rem; line-height: 1.5; height: fit-content;" role="button">
+                                            Ir <i class="fa fa-external-link ml-1" title="Abrir URL"/>
+                                        </a>
+                                        <div class="o_dropdown_kanban dropdown">
+                                            <a class="dropdown-toggle o-no-caret btn btn-sm" role="button" data-bs-toggle="dropdown" href="#" aria-label="Opciones">
+                                                <span class="fa fa-ellipsis-v text-muted" title="Opciones"/>
+                                            </a>
+                                            <div class="dropdown-menu" role="menu">
+                                                <a role="menuitem" type="edit" class="dropdown-item">Editar Parametrización</a>
+                                                <a role="menuitem" type="object" name="test_connection" class="dropdown-item">Probar Conexión</a>
+                                                <div class="dropdown-divider"/>
+                                                <a role="menuitem" type="object" name="action_manual_sync" class="dropdown-item text-primary">Sincronizar Todo</a>
+                                                <a role="menuitem" type="object" name="action_sync_pricelists_to_remote" class="dropdown-item">Sincronizar Precios</a>
+                                                <div class="dropdown-divider"/>
+                                                <a role="menuitem" type="object" name="update_stats" class="dropdown-item">Actualizar Estadísticas</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Estadísticas y Estados en una sola fila compacta -->
+                                <div class="d-flex justify-content-between border-top pt-2" style="gap: 4px;">
+                                    <!-- Productos -->
+                                    <div class="flex-fill text-center p-1 rounded" t-attf-style="background-color: #{record.sync_products.raw_value and record.active.raw_value ? '#e8f5e9' : '#ffebee'}; min-width: 0;">
+                                        <div class="text-uppercase text-muted font-weight-bold" style="font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Prod.</div>
+                                        <div class="h6 mb-0 font-weight-bold text-dark"><field name="total_synced_products"/></div>
+                                        <span t-if="record.sync_products.raw_value and record.active.raw_value" class="badge badge-pill bg-success text-white" style="font-size: 0.55rem; padding: 2px 5px;">ACT</span>
+                                        <span t-else="" class="badge badge-pill bg-danger text-white" style="font-size: 0.55rem; padding: 2px 5px;">OFF</span>
+                                    </div>
+                                    <!-- Imágenes -->
+                                    <div class="flex-fill text-center p-1 rounded" t-attf-style="background-color: #{record.sync_images.raw_value and record.active.raw_value ? '#e8f5e9' : '#ffebee'}; min-width: 0;">
+                                        <div class="text-uppercase text-muted font-weight-bold" style="font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Img.</div>
+                                        <div class="h6 mb-0 font-weight-bold text-dark"><field name="total_synced_images"/></div>
+                                        <span t-if="record.sync_images.raw_value and record.active.raw_value" class="badge badge-pill bg-success text-white" style="font-size: 0.55rem; padding: 2px 5px;">ACT</span>
+                                        <span t-else="" class="badge badge-pill bg-danger text-white" style="font-size: 0.55rem; padding: 2px 5px;">OFF</span>
+                                    </div>
+                                    <!-- Ventas -->
+                                    <div class="flex-fill text-center p-1 rounded" t-attf-style="background-color: #{record.sync_sales.raw_value and record.active.raw_value ? '#e8f5e9' : '#ffebee'}; min-width: 0;">
+                                        <div class="text-uppercase text-muted font-weight-bold" style="font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Ventas</div>
+                                        <div class="h6 mb-0 font-weight-bold text-dark"><field name="total_synced_sales"/></div>
+                                        <span t-if="record.sync_sales.raw_value and record.active.raw_value" class="badge badge-pill bg-success text-white" style="font-size: 0.55rem; padding: 2px 5px;">ACT</span>
+                                        <span t-else="" class="badge badge-pill bg-danger text-white" style="font-size: 0.55rem; padding: 2px 5px;">OFF</span>
+                                    </div>
+                                    <!-- Compras -->
+                                    <div class="flex-fill text-center p-1 rounded" t-attf-style="background-color: #{record.sync_purchases.raw_value and record.active.raw_value ? '#e8f5e9' : '#ffebee'}; min-width: 0;">
+                                        <div class="text-uppercase text-muted font-weight-bold" style="font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Comp.</div>
+                                        <div class="h6 mb-0 font-weight-bold text-dark"><field name="total_synced_purchases"/></div>
+                                        <span t-if="record.sync_purchases.raw_value and record.active.raw_value" class="badge badge-pill bg-success text-white" style="font-size: 0.55rem; padding: 2px 5px;">ACT</span>
+                                        <span t-else="" class="badge badge-pill bg-danger text-white" style="font-size: 0.55rem; padding: 2px 5px;">OFF</span>
+                                    </div>
+                                    <!-- Listas de Precios -->
+                                    <div class="flex-fill text-center p-1 rounded" t-attf-style="background-color: #{record.sync_pricelists.raw_value and record.active.raw_value ? '#e8f5e9' : '#ffebee'}; min-width: 0;">
+                                        <div class="text-uppercase text-muted font-weight-bold" style="font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Precios</div>
+                                        <div class="h6 mb-0 font-weight-bold text-dark"><field name="total_synced_pricelists"/></div>
+                                        <span t-if="record.sync_pricelists.raw_value and record.active.raw_value" class="badge badge-pill bg-success text-white" style="font-size: 0.55rem; padding: 2px 5px;">ACT</span>
+                                        <span t-else="" class="badge badge-pill bg-danger text-white" style="font-size: 0.55rem; padding: 2px 5px;">OFF</span>
+                                    </div>
+                                </div>
+
+                                <!-- Pie de tarjeta -->
+                                <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top">
+                                    <div class="small" style="font-size: 0.7rem;">
+                                        <span class="text-muted">Sync: </span>
+                                        <span class="font-weight-bold text-info">
+                                            <field name="last_sync_date" widget="datetime"/>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <field name="active" widget="boolean_toggle"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_omni_sync_config_search" model="ir.ui.view">
+        <field name="name">omni.sync.config.search</field>
+        <field name="model">omni.sync.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="remote_url"/>
+                <filter string="Activos" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactivos" name="inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter string="Con Sinc. Productos" name="sync_products" domain="[('sync_products', '=', True)]"/>
+                <filter string="Con Sinc. Imágenes" name="sync_images" domain="[('sync_images', '=', True)]"/>
+                <group expand="0" string="Agrupar Por">
+                    <filter string="Estado" name="group_by_active" context="{'group_by': 'active'}"/>
+                    <filter string="URL Remota" name="group_by_url" context="{'group_by': 'remote_url'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_omni_sync_dashboard" model="ir.actions.act_window">
+        <field name="name">Tablero de Sincronización</field>
+        <field name="res_model">omni.sync.config</field>
+        <field name="view_mode">kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                ¡Bienvenido al Tablero de B4B SYNC!
+            </p>
+            <p>
+                Aquí podrás ver el estado de todas tus sincronizaciones activas y estadísticas en tiempo real.
+            </p>
+        </field>
+    </record>
+</odoo>
