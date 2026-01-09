@@ -39,6 +39,31 @@ class SyncConfig(models.Model):
     total_synced_sales = fields.Integer(string='Ventas Sincronizadas', default=0)
     total_synced_purchases = fields.Integer(string='Compras Sincronizadas', default=0)
 
+    def _get_xmlrpc_proxies(self):
+        self.ensure_one()
+        import xmlrpc.client
+
+        # Limpiar URL base
+        url = (self.remote_url or '').strip().rstrip('/')
+
+        if not url.startswith('http'):
+            url = 'https://' + url
+
+        # Endpoints correctos para CloudPepper (slash final)
+        common_url = f"{url}/xmlrpc/2/common/"
+        object_url = f"{url}/xmlrpc/2/object/"
+
+        common = xmlrpc.client.ServerProxy(
+            common_url,
+            allow_none=True
+        )
+        models = xmlrpc.client.ServerProxy(
+            object_url,
+            allow_none=True
+        )
+
+        return common, models
+
     def update_stats(self):
         """Actualiza las estadísticas de forma manual o tras una sincronización para no ralentizar el tablero"""
         for record in self:
@@ -66,58 +91,123 @@ class SyncConfig(models.Model):
             })
     
     def _get_remote_product_count(self):
-        """Consulta la cantidad de productos en la base de datos remota"""
         self.ensure_one()
-        if not self.active or not self.sync_products:
-            return 0
-        
-        import xmlrpc.client
+
         try:
-            common = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/common')
-            uid = common.authenticate(self.remote_database, self.remote_username, self.remote_password, {})
-            
-            if uid:
-                models = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/object')
-                product_count = models.execute_kw(
-                    self.remote_database, uid, self.remote_password,
-                    'product.product', 'search_count',
-                    [[['type', '=', 'product']]]
-                )
-                return product_count
-            return 0
+            # Obtener proxies XML-RPC centralizados
+            common, models = self._get_xmlrpc_proxies()
+
+            # Autenticación
+            uid = common.authenticate(
+                self.remote_database,
+                self.remote_username,
+                self.remote_password,
+                {}
+            )
+
+            if not uid:
+                raise Exception('No fue posible autenticar con la base de datos remota')
+
+            # Contar productos (product.template)
+            product_count = models.execute_kw(
+                self.remote_database,
+                uid,
+                self.remote_password,
+                'product.template',
+                'search_count',
+                [[('active', '=', True)]]
+            )
+
+            # Guardar resultado en el modelo (si existe el campo)
+            if hasattr(self, 'remote_product_count'):
+                self.remote_product_count = product_count
+
+            return product_count
+
         except Exception as e:
-            return 0
-    
-    def _sync_products_from_remote(self):
-        """Sincroniza productos desde la base de datos remota"""
+            _logger.error(
+                'Error obteniendo cantidad de productos remotos [%s]: %s',
+                self.remote_url,
+                str(e),
+                exc_info=True
+            )
+            raise UserError(
+                f'Error al obtener la cantidad de productos remotos:\n{str(e)}'
+            )
+
+    def _sync_products_from_remote(self, batch_size=100):
         self.ensure_one()
-        if not self.active or not self.sync_products:
-            return
-        
-        import xmlrpc.client
-        try:
-            common = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/common')
-            uid = common.authenticate(self.remote_database, self.remote_username, self.remote_password, {})
-            
-            if uid:
-                models = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/object')
-                
-                # Obtener productos de la base remota
-                remote_products = models.execute_kw(
-                    self.remote_database, uid, self.remote_password,
-                    'product.product', 'search_read',
-                    [[['type', '=', 'product']]],
-                    {'fields': ['name', 'default_code', 'list_price', 'standard_price', 'barcode', 'categ_id']}
+
+        uid, models_proxy = self._get_remote_connection()
+
+        Product = self.env['product.product']
+        offset = 0
+        total_created = 0
+        total_updated = 0
+
+        while True:
+            try:
+                remote_products = models_proxy.execute_kw(
+                    self.remote_db,
+                    uid,
+                    self.remote_password,
+                    'product.product',
+                    'search_read',
+                    [[('active', '=', True)]],
+                    {
+                        'fields': [
+                            'name',
+                            'default_code',
+                            'barcode',
+                            'list_price',
+                            'standard_price',
+                            'type'
+                        ],
+                        'limit': batch_size,
+                        'offset': offset
+                    }
                 )
-                
-                # Sincronizar cada producto
-                for remote_product in remote_products:
-                    self._create_or_update_product(remote_product)
-                    
-        except Exception as e:
-            # Manejo de errores
-            pass
-    
+
+            except Exception as e:
+                raise UserError(_(
+                    "Error obteniendo productos remotos:\n%s"
+                ) % str(e))
+
+            if not remote_products:
+                break
+
+            for rp in remote_products:
+                if not rp.get('default_code'):
+                    continue  # clave para evitar duplicados malos
+
+                local_product = Product.search(
+                    [('default_code', '=', rp['default_code'])],
+                    limit=1
+                )
+
+                vals = {
+                    'name': rp['name'],
+                    'default_code': rp['default_code'],
+                    'barcode': rp.get('barcode'),
+                    'list_price': rp.get('list_price', 0.0),
+                    'standard_price': rp.get('standard_price', 0.0),
+                    'type': rp.get('type', 'product'),
+                }
+
+                if local_product:
+                    local_product.write(vals)
+                    total_updated += 1
+                else:
+                    Product.create(vals)
+                    total_created += 1
+
+            offset += batch_size
+
+        return {
+            'created': total_created,
+            'updated': total_updated
+        }
+
     def _create_or_update_product(self, remote_product_data):
         """Crea o actualiza un producto en la base local"""
         product_obj = self.env['product.product']
@@ -154,10 +244,14 @@ class SyncConfig(models.Model):
                 raise ValidationError('La URL debe comenzar con http:// o https://')
 
     def test_connection(self):
-        import xmlrpc.client
         try:
-            common = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/common')
-            uid = common.authenticate(self.remote_database, self.remote_username, self.remote_password, {})
+            common, _models = self._get_xmlrpc_proxies()
+            uid = common.authenticate(
+                self.remote_database,
+                self.remote_username,
+                self.remote_password,
+                {}
+            )
             if uid:
                 return {
                     'type': 'ir.actions.client',
@@ -199,80 +293,158 @@ class SyncConfig(models.Model):
             }
         }
 
-    def action_sync_pricelists_to_remote(self, execution_type='auto'):
-        """Sincroniza las listas de precios marcadas hacia la base remota"""
+    def action_sync_pricelists_to_remote(self):
         self.ensure_one()
-        import xmlrpc.client
-        
-        log = self.env['sync.pictures.log'].create({
-            'config_id': self.id,
-            'status': 'in_progress',
-            'execution_type': execution_type,
-            'brand': 'LISTAS DE PRECIOS'
-        })
-        
-        try:
-            common = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/common')
-            uid = common.authenticate(self.remote_database, self.remote_username, self.remote_password, {})
-            if not uid:
-                raise Exception('Autenticación fallida')
-            
-            models_rpc = xmlrpc.client.ServerProxy(f'{self.remote_url}/xmlrpc/2/object')
-            
-            pricelists = self.env['product.pricelist'].search([('sync_to_remote', '=', True)])
-            synced_count = 0
-            failed_count = 0
-            line_vals = []
-            
-            for pl in pricelists:
-                try:
-                    # Buscar si existe en remoto por nombre
-                    remote_pl_ids = models_rpc.execute_kw(
-                        self.remote_database, uid, self.remote_password,
-                        'product.pricelist', 'search', [[('name', '=', pl.name)]]
+
+        uid, models_proxy = self._get_remote_connection()
+
+        Pricelist = self.env['product.pricelist']
+        PricelistItem = self.env['product.pricelist.item']
+
+        synced = 0
+        updated = 0
+
+        for pricelist in Pricelist.search([]):
+
+            # Buscar lista remota por nombre
+            remote_ids = models_proxy.execute_kw(
+                self.remote_db,
+                uid,
+                self.remote_password,
+                'product.pricelist',
+                'search',
+                [[('name', '=', pricelist.name)]],
+                {'limit': 1}
+            )
+
+            pricelist_vals = {
+                'name': pricelist.name,
+                'currency_id': pricelist.currency_id.id,
+                'active': pricelist.active,
+            }
+
+            # Crear o actualizar lista de precios
+            if remote_ids:
+                remote_pricelist_id = remote_ids[0]
+                models_proxy.execute_kw(
+                    self.remote_db,
+                    uid,
+                    self.remote_password,
+                    'product.pricelist',
+                    'write',
+                    [[remote_pricelist_id], pricelist_vals]
+                )
+                updated += 1
+            else:
+                remote_pricelist_id = models_proxy.execute_kw(
+                    self.remote_db,
+                    uid,
+                    self.remote_password,
+                    'product.pricelist',
+                    'create',
+                    [pricelist_vals]
+                )
+                synced += 1
+
+            # Eliminar reglas remotas existentes (evita inconsistencias)
+            remote_items = models_proxy.execute_kw(
+                self.remote_db,
+                uid,
+                self.remote_password,
+                'product.pricelist.item',
+                'search',
+                [[('pricelist_id', '=', remote_pricelist_id)]]
+            )
+
+            if remote_items:
+                models_proxy.execute_kw(
+                    self.remote_db,
+                    uid,
+                    self.remote_password,
+                    'product.pricelist.item',
+                    'unlink',
+                    [remote_items]
+                )
+
+            # Crear reglas de precios
+            for item in PricelistItem.search([('pricelist_id', '=', pricelist.id)]):
+
+                item_vals = {
+                    'pricelist_id': remote_pricelist_id,
+                    'applied_on': item.applied_on,
+                    'min_quantity': item.min_quantity,
+                    'compute_price': item.compute_price,
+                    'fixed_price': item.fixed_price,
+                    'percent_price': item.percent_price,
+                    'price_discount': item.price_discount,
+                    'price_surcharge': item.price_surcharge,
+                    'price_round': item.price_round,
+                    'price_min_margin': item.price_min_margin,
+                    'price_max_margin': item.price_max_margin,
+                }
+
+                # Resolver dependencias (producto / plantilla / categoría)
+                if item.product_id:
+                    remote_product = models_proxy.execute_kw(
+                        self.remote_db,
+                        uid,
+                        self.remote_password,
+                        'product.product',
+                        'search',
+                        [[('default_code', '=', item.product_id.default_code)]],
+                        {'limit': 1}
                     )
-                    
-                    # Preparar datos básicos (esto es simplificado, Odoo 13+ usa pricelist.item)
-                    pl_data = {
-                        'name': pl.name,
-                        'currency_id': models_rpc.execute_kw(
-                            self.remote_database, uid, self.remote_password,
-                            'res.currency', 'search', [[('name', '=', pl.currency_id.name)]]
-                        )[0] if pl.currency_id else False
-                    }
-                    
-                    if remote_pl_ids:
-                        models_rpc.execute_kw(self.remote_database, uid, self.remote_password, 'product.pricelist', 'write', [remote_pl_ids, pl_data])
-                        comment = 'Actualizada correctamente'
+                    if remote_product:
+                        item_vals['product_id'] = remote_product[0]
                     else:
-                        models_rpc.execute_kw(self.remote_database, uid, self.remote_password, 'product.pricelist', 'create', [pl_data])
-                        comment = 'Creada correctamente'
-                    
-                    synced_count += 1
-                    line_vals.append((0, 0, {
-                        'pricelist_name': pl.name,
-                        'status': 'synced',
-                        'comment': comment
-                    }))
-                except Exception as e:
-                    failed_count += 1
-                    line_vals.append((0, 0, {
-                        'pricelist_name': pl.name,
-                        'status': 'failed',
-                        'comment': str(e)
-                    }))
-            
-            log.write({
-                'status': 'completed',
-                'pricelists_synced': synced_count,
-                'pricelists_failed': failed_count,
-                'pricelist_line_ids': line_vals
-            })
-        except Exception as e:
-            log.write({
-                'status': 'failed',
-                'error_message': str(e)
-            })
+                        continue
+
+                if item.product_tmpl_id:
+                    remote_template = models_proxy.execute_kw(
+                        self.remote_db,
+                        uid,
+                        self.remote_password,
+                        'product.template',
+                        'search',
+                        [[('name', '=', item.product_tmpl_id.name)]],
+                        {'limit': 1}
+                    )
+                    if remote_template:
+                        item_vals['product_tmpl_id'] = remote_template[0]
+                    else:
+                        continue
+
+                if item.categ_id:
+                    remote_category = models_proxy.execute_kw(
+                        self.remote_db,
+                        uid,
+                        self.remote_password,
+                        'product.category',
+                        'search',
+                        [[('name', '=', item.categ_id.name)]],
+                        {'limit': 1}
+                    )
+                    if remote_category:
+                        item_vals['categ_id'] = remote_category[0]
+                    else:
+                        continue
+
+                models_proxy.execute_kw(
+                    self.remote_db,
+                    uid,
+                    self.remote_password,
+                    'product.pricelist.item',
+                    'create',
+                    [item_vals]
+                )
+
+        return {
+            'status': 'success',
+            'created_pricelists': synced,
+            'updated_pricelists': updated
+        }
+
+
 
     def cron_sync_all(self, config_id=None, execution_type='auto'):
         """Método principal llamado por el Cron o manualmente para múltiples clientes"""
