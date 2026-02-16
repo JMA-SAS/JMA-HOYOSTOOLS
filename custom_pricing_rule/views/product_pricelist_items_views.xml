@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="product_pricelist_item_form_view" model="ir.ui.view">
+            <field name="name">product.pricelist.item.form</field>
+            <field name="model">product.pricelist.item</field>
+            <field name="inherit_id" ref="product.product_pricelist_item_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='pricelist_rule_target']" position="inside">
+                    <field name="apply_brand" options="{'no_create':1}" invisible="applied_on != '4_product_brand'" required="applied_on == '4_product_brand'"/>
+                    <field name="apply_origin_country" options="{'no_create':1}" invisible="applied_on != '5_product_origin_country'" required="applied_on == '5_product_origin_country'"/>
+                    <field name="apply_tag" options="{'no_create':1}" invisible="applied_on != '6_product_tag'" required="applied_on == '6_product_tag'"/>
+                </xpath>
+            </field>
+        </record>
+
+
+    </data>
+</odoo>
